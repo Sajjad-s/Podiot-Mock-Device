@@ -57,7 +57,7 @@ public class SecuritySystem implements Sensor {
         System.out.println("SecuritySystem" +" "+ "Reported: " + "status" + ": " +instantiate.getDeviceTwinDocument().getAttributes().getReported().get("status"));
 
         instantiate.getDeviceTwinDocument().getAttributes().getReported().put(
-                "zones", RandomGenerator.generateIncreasingRandoms(10,100));
+                "zones", RandomGenerator.generateIncreasingRandoms(10,100).toString());
         System.out.println("SecuritySystem" +" "+ "Reported: " + "zones" + ": " +instantiate.getDeviceTwinDocument().getAttributes().getReported().get("zones"));
 
 
