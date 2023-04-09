@@ -123,7 +123,7 @@ public class PodiotMockDeviceApplication {
                             System.out.println("##################          MQTT Exception Happened Connection Failed    ⛔   ##################");
                             throw new RuntimeException(e);
                         } catch (Exception e) {
-                            log.error("sdkljfkjldsf");
+                            System.out.println("##################          Unknown Exception Happened Connection Failed    ⛔   ##################");
                             e.printStackTrace();
                         }
                     });
