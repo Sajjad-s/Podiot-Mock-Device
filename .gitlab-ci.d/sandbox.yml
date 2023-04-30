@@ -1,0 +1,31 @@
+stages:
+  - build_sandbox
+  - update_sandbox
+
+############ Build stage ############
+Build and Push sandbox project image:
+  stage: build_sandbox
+  tags: 
+    - ${SAND_RUNNER_TAG}
+  only:
+    - sandbox
+#  before_script:
+#    - curl --insecure -u ${SAND_NEXUS_USER}:${SAND_NEXUS_PASS} ${SAND_RAW_REPO}/${SAND_ENV_PATH} -o ./application.properties
+  script:
+    - docker build -t $SAND_DEPLOY_REGISTRY/$SAND_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG  . --build-arg MAVEN_PROXY=$SAND_MAVEN_PROXY --build-arg NEXUS_USERNAME=$SAND_NEXUS_USER --build-arg NEXUS_PASSWORD=$SAND_NEXUS_PASS
+    - docker login $SAND_DEPLOY_REGISTRY -u $SAND_EMAIL -p $SAND_DEPLOY_PASS
+    - docker push $SAND_DEPLOY_REGISTRY/$SAND_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG
+    - docker logout $SAND_DEPLOY_REGISTRY
+    - docker rmi  $SAND_DEPLOY_REGISTRY/$SAND_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG
+    - docker image prune -f --filter label=stage=builder
+
+############ Update stage ###########
+
+Update application :
+  stage: update_sandbox
+  tags: 
+    - ${SAND_RUNNER_TAG}
+  only:
+    - sandbox
+  script:
+    - 'curl -vv -X GET "$SAND_DEPLOY_API/$SAND_DEPLOY_APPID/restart?tagStart=latest&tagStop=latest" -H  "accept: */*" -H  "Authorization: $SAND_DEPLOY_TOKEN"'

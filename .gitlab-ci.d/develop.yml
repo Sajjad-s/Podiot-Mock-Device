@@ -1,0 +1,32 @@
+stages:
+  - build_develop
+  - update_develop
+
+############ Build stage ############
+
+Build and Transfer Docker Image :
+  stage: build_develop
+  tags:
+    - ${DEV_RUNNER_TAG}
+  only:
+    - develop
+#  before_script:
+#    - curl --insecure -u $DEV_NEXUS_USER:$DEV_NEXUS_PASS  $DEV_RAW_REPO/$DEV_ENV_PATH -o ./application.properties
+  script:
+    - docker build -t $DEV_DEPLOY_REGISTRY/$DEV_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG  . --build-arg MAVEN_PROXY=$DEV_MAVEN_PROXY --build-arg NEXUS_USERNAME=$DEV_NEXUS_USER --build-arg NEXUS_PASSWORD=$DEV_NEXUS_PASS 
+    - docker login $DEV_DEPLOY_REGISTRY -u $DEV_EMAIL -p $DEV_DEPLOY_PASS
+    - docker push $DEV_DEPLOY_REGISTRY/$DEV_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG
+    - docker logout $DEV_DEPLOY_REGISTRY
+    - docker rmi  $DEV_DEPLOY_REGISTRY/$DEV_DEPLOY_USER/$PROJECT_NAME:$IMAGE_TAG
+    - docker image prune -f --filter label=stage=builder
+
+############ Update stage ###########
+
+Update application :
+  stage: update_develop
+  tags:
+    - ${DEV_RUNNER_TAG}
+  only: 
+    - develop
+  script:
+    - 'curl -X GET "$DEV_DEPLOY_API/$DEV_DEPLOY_APPID/restart?tagStart=$IMAGE_TAG&tagStop=$IMAGE_TAG" -H  "accept: */*" -H  "Authorization: $DEV_DEPLOY_TOKEN"'
