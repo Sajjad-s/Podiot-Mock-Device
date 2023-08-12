@@ -16,18 +16,14 @@ import java.util.List;
 
 public class PodiotMockDeviceApplication {
 
-    static final String CONTENT = "$requestId\":\"AirQuality\",\"deviceTwinDocument\":{\"attributes\":{\"desired\"";
-
     static final String subscribeTopicDesired = "dvcout/DEVICE_ID/CLIENT_ID/twin/update/desired";
+    private static final String MQTT_SERVER = "tcp://iot-mqtt.pod.ir:1883";
+    private static final String reportedTopic = "dvcasy/twin/update/reported";
     static final String subscribeTopicReported = "dvcout/DEVICE_ID/CLIENT_ID/twin/update/reported";
-
     static final String subscribeTopicOrigin = "dvcout/DEVICE_ID/CLIENT_ID/#";
-
     static final String subscribeTopicRejected = "dvcout/DEVICE_ID/CLIENT_ID/twin/response/rejected";
+    private static final String CONTENT = "$requestId\":\"AirQuality\",\"deviceTwinDocument\":{\"attributes\":{\"desired\"";
 
-    static final String reportedTopic = "dvcasy/twin/update/reported";
-
-    static final String MQTT_SERVER = "tcp://iot-mqtt.pod.ir:1883";
 
     public static void main(String[] args) throws MqttException, InterruptedException {
         SpringApplication.run(PodiotMockDeviceApplication.class, args);
