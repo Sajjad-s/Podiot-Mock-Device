@@ -141,6 +141,25 @@ public class PodiotMockDeviceApplication {
 
         return listDevices;
     }
+    private static void connectAndSetupDevice(Device device) throws MqttException, InterruptedException {
+        try (MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId())) {
+            MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
+            mqttConnectionOptions.setCleanSession(true);
+            mqttConnectionOptions.setAutomaticReconnect(true);
+
+            mqttClient.connect(mqttConnectionOptions);
+
+            log.info("################## Device ({}) Connected ##################", device.getDeviceId());
+
+            setupMqttCallback(mqttClient, device);
+
+            if (device instanceof Sensor) {
+                startSensorThread((Sensor) device, mqttClient);
+            }
+        } catch (Exception e) {
+            log.error("################## Exception Happened Connection Failed  ⛔ ##################", e);
+        }
+    }
 
     private static void setupMqttCallback(MqttClient mqttClient, Device device) throws MqttException {
         mqttClient.setCallback(new MqttCallback() {
