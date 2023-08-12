@@ -2,9 +2,7 @@ package ir.pod.podiotmockdevice;
 
 import ir.pod.podiotmockdevice.devices.*;
 import lombok.extern.log4j.Log4j2;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -142,5 +140,54 @@ public class PodiotMockDeviceApplication {
         // Add other devices...
 
         return listDevices;
+    }
+
+    private static void setupMqttCallback(MqttClient mqttClient, Device device) throws MqttException {
+        mqttClient.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable throwable) {
+                log.error("Connection lost for device: {}", device.getDeviceId());
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                log.info("Received message on topic: {}", topic);
+
+                String stringPayload = new String(message.getPayload());
+
+                try {
+                    AsyncObjectWrapper wrapper = JsonUtility.getObject(
+                            stringPayload,
+                            AsyncObjectWrapper.class);
+
+                    UpdateDeviceTwinDto dto = JsonUtility.getObject(
+                            wrapper.getContent(),
+                            UpdateDeviceTwinDto.class);
+
+                    log.info("Device twin update content: {}", wrapper.getContent());
+
+                    if (device instanceof Actuator) {
+                        ((Actuator) device).processInput(mqttClient, reportedTopic, dto);
+                    }
+                } catch (JsonProcessException e) {
+                    log.error("Json Parse Exception", e);
+                } catch (MqttException e) {
+                    log.error("MQTT Exception", e);
+                } catch (Exception e) {
+                    log.error("Unknown Exception", e);
+                }
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                // todo
+            }
+
+        });
+
+        mqttClient.subscribe(
+                subscribeTopicDesired
+                        .replace("DEVICE_ID", device.getDeviceId())
+                        .replace("CLIENT_ID", device.getClientId()));
     }
 }
