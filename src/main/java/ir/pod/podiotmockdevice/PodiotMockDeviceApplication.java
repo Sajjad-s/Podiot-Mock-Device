@@ -196,4 +196,20 @@ public class PodiotMockDeviceApplication {
                         .replace("DEVICE_ID", device.getDeviceId())
                         .replace("CLIENT_ID", device.getClientId()));
     }
+
+    private static void startSensorThread(Sensor sensor, MqttClient mqttClient) {
+        new Thread(() -> {
+            while (true) {
+                log.info("################## Sensors information published Type: {} DeviceId: {} ##################",
+                        sensor.getClass().getSimpleName(), sensor.getDeviceId());
+
+                try {
+                    sensor.report(mqttClient, reportedTopic);
+                    Thread.sleep(10000);
+                } catch (Exception e) {
+                    log.error("################## Sensor Thread Exception ##################", e);
+                }
+            }
+        }).start();
+    }
 }
