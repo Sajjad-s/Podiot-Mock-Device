@@ -180,9 +180,15 @@ public class PodiotMockDeviceApplication {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                // todo
+                try {
+                    if (token != null && token.getMessage() != null) {
+                        log.info("Message delivered successfully: {}", new String(token.getMessage().getPayload()));
+                    }
+                } catch (MqttException e) {
+                    log.error("Message delivery Error", e);
+                    throw new RuntimeException(e);
+                }
             }
-
         });
 
         mqttClient.subscribe(
