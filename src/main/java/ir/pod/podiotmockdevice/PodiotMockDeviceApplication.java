@@ -26,91 +26,13 @@ public class PodiotMockDeviceApplication {
 
     public static void main(String[] args) throws MqttException, InterruptedException {
         SpringApplication.run(PodiotMockDeviceApplication.class, args);
-        //todo : set call back
+        List<Device> listDevices = initializeDevices();
 
         for (Device device : listDevices) {
-
-            MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId());
-
-            MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
-            mqttConnectionOptions.setCleanSession(true);
-            mqttConnectionOptions.setAutomaticReconnect(true);
-//            mqttConnectionOptions.setConnectionTimeout(10);
-            device.getClass().getName();
-            try {
-                mqttClient.connect(mqttConnectionOptions);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("##################      Exception Happened Connection Failed  ⛔   ##################");
-            }
-            do {
-                Thread.sleep(2000);
-                System.out.println("##################                                ReCONNECT                                 🟡 ##################");
-
-            } while (!mqttClient.isConnected());
-
-            mqttClient.subscribe(
-                    subscribeTopicDesired
-                            .replace("DEVICE_ID", device.getDeviceId())
-                            .replace("CLIENT_ID", device.getClientId())
-                    , (topic, message) -> {
-                        System.out.println("##################     subscribeTopicOrigin for Device:  {}      ################## "
-                                .replace(" {} ", device.getDeviceId()));
-
-
-                        byte[] payload = message.getPayload();
-                        String stringPayload = new String(payload);
-
-                        try {
-
-                            AsyncObjectWrapper wrapper = JsonUtility.getObject(
-                                    stringPayload,
-                                    AsyncObjectWrapper.class);
-
-                            UpdateDeviceTwinDto dto = JsonUtility.getObject(
-                                    wrapper.getContent(),
-                                    UpdateDeviceTwinDto.class);
-
-                            System.out.println(wrapper.getContent());
-
-                            if (device instanceof Actuator) {
-                                ((Actuator) device).processInput(mqttClient, reportedTopic, dto);
-                            }
-                        } catch (JsonProcessException e) {
-                            System.out.println("##################      Json Parse Exception Happened Connection Failed  ⛔   ##################");
-                            throw new RuntimeException(e);
-                        } catch (MqttException e) {
-                            System.out.println("##################          MQTT Exception Happened Connection Failed    ⛔   ##################");
-                            throw new RuntimeException(e);
-                        } catch (Exception e) {
-                            System.out.println("##################          Unknown Exception Happened Connection Failed ⛔   ##################");
-                            e.printStackTrace();
-                        }
-                    });
-            System.out.println("##################                      Device ({})  Connected                     🟢 ##################"
-                    .replace("{}", device.getDeviceId()));
-
-
-            if (device instanceof Sensor) {
-                new Thread(() -> {
-                    while (!"god is dead".isEmpty()) {
-                        System.out.println("##################     Sensors information published Type: " + device.getClass().getSimpleName() + " DeviceId: " + device.getDeviceId() + "    ##############");
-                        try {
-                            ((Sensor) device).report(mqttClient, reportedTopic);
-                            Thread.sleep(10000);
-                        } catch (JsonProcessException e) {
-                            throw new RuntimeException(e);
-                        } catch (MqttException e) {
-                            throw new RuntimeException(e);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }).start();
-            }
+            connectAndSetupDevice(device);
         }
-        System.out.println("##################                         Waiting for get message                       🟡 ##################");
 
+        log.info("################## Waiting for incoming messages ##################");
     }
 
     private static List<Device> initializeDevices() {
