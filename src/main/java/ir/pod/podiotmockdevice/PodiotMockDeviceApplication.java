@@ -153,6 +153,32 @@ public class PodiotMockDeviceApplication {
 
     }
 
+    private static List<Device> initializeDevices() {
+        List<Device> listDevices = new ArrayList<>();
+
+        listDevices.add(new IrTransmitter("ktunhbi5j7c", "CBSTBJQH3IPDZR2BY3HNMIK"));
+
+        listDevices.add(new SmartRelay("ro5qfc4leeb", "677KXSMW74D261W680396O8"));
+
+        listDevices.add(new DoorSensor("2vriuq7njz7", "NMBJ8JGPPKOOI0O5INREI5B"));
+
+        listDevices.add(new Thermostat("azmtolm7i2u", "2TBOK3W0ITJE3LX437XULH3"));
+
+        listDevices.add(new PowerSwitch("22xza8wflbn", "IMMNA153Z7K1BI3DX2I4S4S"));
+
+        listDevices.add(new SecuritySystem("22az6p6oui3", "MR0CMQ4LKXIBMQ8HSE4DXXF"));
+
+        listDevices.add(new AirQuality("oeob5pteetk", "DZG55QAH5HQSSPFETV0OA7H"));
+
+        listDevices.add(new SecurityCamera("peg7k230v3n", "54413VUXYW7JQ601B1C6SC3"));
+
+        listDevices.add(new PowerMeter("ikdxl6z0r0e", "A14EZ2GV7A2YAUPFBZP55KB"));
+
+        listDevices.add(new MovementDetection("7rinzm131en", "BG9BKSNLCDRRHCQY99KNVGD"));
+
+        listDevices.add(new WaterMeter("9q4jvnhj3s4", "C5GCH0D3CJYP4D0PJB6PD1Z"));
+        // Add other devices...
+
+        return listDevices;
+    }
 }
-
-
