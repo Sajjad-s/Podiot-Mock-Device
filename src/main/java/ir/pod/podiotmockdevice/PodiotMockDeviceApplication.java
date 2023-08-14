@@ -63,24 +63,33 @@ public class PodiotMockDeviceApplication {
 
         return listDevices;
     }
+
     private static void connectAndSetupDevice(Device device) throws MqttException, InterruptedException {
-        try (MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId())) {
-            MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
-            mqttConnectionOptions.setCleanSession(true);
-            mqttConnectionOptions.setAutomaticReconnect(true);
+        new Thread(() -> {
+            try (MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId())) {
+                MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
+                mqttConnectionOptions.setCleanSession(true);
+                mqttConnectionOptions.setAutomaticReconnect(true);
 
-            mqttClient.connect(mqttConnectionOptions);
+                setupMqttCallback(mqttClient, device);
+                mqttClient.connect(mqttConnectionOptions);
+                Thread.sleep(2000);
+                while (!mqttClient.isConnected()) {
+                    Thread.sleep(1000);
+                    mqttClient.subscribe(
+                            subscribeTopicDesired
+                                    .replace("DEVICE_ID", device.getDeviceId())
+                                    .replace("CLIENT_ID", device.getClientId()));
 
-            log.info("################## Device ({}) Connected ##################", device.getDeviceId());
-
-            setupMqttCallback(mqttClient, device);
-
-            if (device instanceof Sensor) {
-                startSensorThread((Sensor) device, mqttClient);
+                    log.info("################## Device ({}) Connected ##################", device.getDeviceId());
+                }
+                if (device instanceof Sensor) {
+                    startSensorThread((Sensor) device, mqttClient);
+                }
+            } catch (Exception e) {
+                log.error("################## Exception Happened Connection Failed  ⛔ ##################", e);
             }
-        } catch (Exception e) {
-            log.error("################## Exception Happened Connection Failed  ⛔ ##################", e);
-        }
+        });
     }
 
     private static void setupMqttCallback(MqttClient mqttClient, Device device) throws MqttException {
@@ -132,10 +141,7 @@ public class PodiotMockDeviceApplication {
             }
         });
 
-        mqttClient.subscribe(
-                subscribeTopicDesired
-                        .replace("DEVICE_ID", device.getDeviceId())
-                        .replace("CLIENT_ID", device.getClientId()));
+
     }
 
     private static void startSensorThread(Sensor sensor, MqttClient mqttClient) {
