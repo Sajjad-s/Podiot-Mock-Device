@@ -5,10 +5,6 @@ import lombok.extern.log4j.Log4j2;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +21,6 @@ public class PodiotMockDeviceApplication {
     static final String subscribeTopicOrigin = "dvcout/DEVICE_ID/CLIENT_ID/#";
     static final String subscribeTopicRejected = "dvcout/DEVICE_ID/CLIENT_ID/twin/response/rejected";
     private static final String CONTENT = "$requestId\":\"AirQuality\",\"deviceTwinDocument\":{\"attributes\":{\"desired\"";
-    private static Iterable<? extends Device> listDevices = initializeDevices();
 
 
     public static void main(String[] args) throws MqttException, InterruptedException {
@@ -69,31 +64,38 @@ public class PodiotMockDeviceApplication {
     }
 
     private static void connectAndSetupDevice(Device device) throws MqttException, InterruptedException {
-        new Thread(() -> {
-            try (MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId())) {
-                MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
-                mqttConnectionOptions.setCleanSession(true);
-                mqttConnectionOptions.setAutomaticReconnect(true);
+        try (MqttClient mqttClient = new MqttClient(MQTT_SERVER, device.getClientId())) {
+            MqttConnectOptions mqttConnectionOptions = new MqttConnectOptions();
+            mqttConnectionOptions.setCleanSession(true);
+            mqttConnectionOptions.setAutomaticReconnect(true);
+            mqttConnectionOptions.setCleanSession(true);
+            mqttConnectionOptions.setConnectionTimeout(10000);
+            mqttConnectionOptions.setKeepAliveInterval(1000);
+            mqttConnectionOptions.setMaxReconnectDelay(100);
 
-                setupMqttCallback(mqttClient, device);
-                mqttClient.connect(mqttConnectionOptions);
-                Thread.sleep(2000);
-                while (!mqttClient.isConnected()) {
-                    Thread.sleep(1000);
-                    mqttClient.subscribe(
-                            subscribeTopicDesired
-                                    .replace("DEVICE_ID", device.getDeviceId())
-                                    .replace("CLIENT_ID", device.getClientId()));
+            setupMqttCallback(mqttClient, device);
+            mqttClient.connect(mqttConnectionOptions);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(2000);
+                    while (!mqttClient.isConnected()) {
+                        Thread.sleep(1000);
+                        mqttClient.subscribe(
+                                subscribeTopicDesired
+                                        .replace("DEVICE_ID", device.getDeviceId())
+                                        .replace("CLIENT_ID", device.getClientId()));
 
-                    log.info("################## Device ({}) Connected ##################", device.getDeviceId());
+                        log.info("################## Device ({}) Connected ##################", device.getDeviceId());
+
+                    }
+                } catch (InterruptedException | MqttException e) {
+                    throw new RuntimeException(e);
                 }
                 if (device instanceof Sensor) {
                     startSensorThread((Sensor) device, mqttClient);
                 }
-            } catch (Exception e) {
-                log.error("################## Exception Happened Connection Failed  ⛔ ##################", e);
-            }
-        });
+            });
+        }
     }
 
     private static void setupMqttCallback(MqttClient mqttClient, Device device) throws MqttException {
